@@ -8,6 +8,7 @@ from models import db, Restaurant, Pizza, RestaurantPizza
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.json.compact = False
 
 migrate = Migrate(app, db)
 
@@ -18,13 +19,42 @@ db.init_app(app)
 def home():
     return ''
 
-@app.route('/restaurants')
+@app.route('/restaurants', methods = ['GET', 'POST'])
 def restaurants():
-    return ''
+    
+    if request.method == 'GET':
+        restaurants = Restaurant.query.all()
+        restaurants_dict = [restaurant.to_dict() for restaurant in restaurants]
+        response = make_response(
+            jsonify(restaurants_dict),
+            200,
+        )
+    return response
+    
 
-@app.route('/restaurants/<int:id>')
+@app.route('/restaurants/<int:id>', methods = ['GET', 'DELETE'])
 def restaurant_by_id(id):
-    return ''
+    restaurant = Restaurant.query.filter(Restaurant.id == id).first()
+    pizzas = RestaurantPizza.query.filter_by(restaurant_id = id).all()
+    pizza_dict = [pizza.pizza.to_dict() for pizza in pizzas]
+
+    if not restaurant:
+        error = {"error": "Restaurant not found"}
+        reponse = make_response(
+            jsonify(error),
+            404,
+        )
+        return reponse
+    
+    if request.method == 'GET':
+        restaurant_dict = restaurant.to_dict()
+        pizza_resp = {"pizzas": pizza_dict}
+        restaurant_dict.update(pizza_resp)
+        get_response = make_response(
+            jsonify(restaurant_dict),
+            200,
+        )
+        return get_response
 
 @app.route('/pizzas')
 def pizzas():
