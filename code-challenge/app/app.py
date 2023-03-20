@@ -20,19 +20,82 @@ def home():
 
 @app.route('/restaurants')
 def restaurants():
-    return ''
+    rests = [rest for rest in Restaurant.query.all()]
 
-@app.route('/restaurants/<int:id>')
+    response = make_response(
+        jsonify(rests),
+        200,
+    )
+    
+    return response
+    
+
+@app.route('/restaurants/<int:id>', methods = ['GET', 'DELETE'])
 def restaurant_by_id(id):
-    return ''
+    rest = Restaurant.query.filter_by(id=id).first()
+
+    if not rest:
+        error = { "error": "Restaurant not found"}
+
+        response = make_response(
+            jsonify(error),
+            404,
+        )
+        return response
+    
+    if request.method == 'GET':
+        get_response = make_response(
+            jsonify(rest),
+            200,
+        )
+        return get_response
+    
+    if request.method == 'DELETE':
+        rest_pizza = RestaurantPizza.query.filter(RestaurantPizza.restaurant_id == rest.id)
+        db.session.delete(rest_pizza)
+        db.session.commit()
+
+        db.session.delete(rest)
+        db.session.commit()
+    
 
 @app.route('/pizzas')
 def pizzas():
-    return ''
+    pizzas = [pizza for pizza in Pizza.query.all()]
+
+    response = make_response(
+        jsonify(pizzas),
+        200,
+    )
+
+    return response
 
 @app.route('/restaurant_pizzas')
-def resaurant_pizzas():
-    return ''
+def restaurant_pizzas():
+    data = request.get_json()
+    new_rest_pizza = RestaurantPizza()
+
+    for field in data:
+        setattr(new_rest_pizza, field, data)
+
+    db.session.add(new_rest_pizza)
+    db.session.commit()
+
+    if not new_rest_pizza:
+        error = {"errors": "['validation errors']"}
+        error_response = make_response(
+            jsonify(error),
+            404,
+        )
+        return error_response
+
+    response = make_response(
+            jsonify(new_rest_pizza.pizza),
+            202,
+        )
+    return response
+    
+
 
 
 if __name__ == '__main__':
