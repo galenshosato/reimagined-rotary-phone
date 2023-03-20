@@ -58,11 +58,41 @@ def restaurant_by_id(id):
 
 @app.route('/pizzas')
 def pizzas():
-    return ''
+    pizzas = [pizza for pizza in Pizza.query.all()]
+
+    response = make_response(
+        jsonify(pizzas),
+        200,
+    )
+
+    return response
 
 @app.route('/restaurant_pizzas')
-def resaurant_pizzas():
-    return ''
+def restaurant_pizzas():
+    data = request.get_json()
+    new_rest_pizza = RestaurantPizza()
+
+    for field in data:
+        setattr(new_rest_pizza, field, data)
+
+    db.session.add(new_rest_pizza)
+    db.session.commit()
+
+    if not new_rest_pizza:
+        error = {"errors": "['validation errors']"}
+        error_response = make_response(
+            jsonify(error),
+            404,
+        )
+        return error_response
+
+    response = make_response(
+            jsonify(new_rest_pizza.pizza),
+            202,
+        )
+    return response
+    
+
 
 
 if __name__ == '__main__':
